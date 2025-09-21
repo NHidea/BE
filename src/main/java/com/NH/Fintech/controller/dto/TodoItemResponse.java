@@ -21,4 +21,13 @@ public class TodoItemResponse {
 
     @Schema(description = "정렬 순서", example = "1")
     private Integer orderIndex;
+
+    @Schema(description = "머신 판정 코드", example = "SUGGEST_RULES_V1")
+    private String ruleCode;
+
+    @Schema(description = "머신 판정 파라미터(JSON)", example = "{\"source\":\"mbti+spending\"}")
+    private String ruleParams;
+
+    @Schema(description = "자동 체크 여부", example = "false")
+    private boolean autoChecked;
 }

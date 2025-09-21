@@ -38,3 +38,5 @@ out/
 
 # Spring Boot application properties
 src/main/resources/application.properties
+.env
+Dockerfile

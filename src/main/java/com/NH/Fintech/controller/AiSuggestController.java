@@ -58,6 +58,9 @@ public class AiSuggestController {
                         .summary(i.getSummary())
                         .checked(Boolean.TRUE.equals(i.getIsChecked()))
                         .orderIndex(i.getOrderIndex())
+                        .ruleCode(i.getRuleCode())
+                        .ruleParams(i.getRuleParams())
+                        .autoChecked(Boolean.TRUE.equals(i.getAutoChecked()))
                         .build()
                 ).toList()
         );

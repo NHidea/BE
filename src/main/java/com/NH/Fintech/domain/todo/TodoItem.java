@@ -16,7 +16,14 @@ import java.time.LocalDateTime;
                 @Index(name = "idx_todo_item_user", columnList = "user_id"),
                 @Index(name = "idx_todo_item_checked", columnList = "is_checked"),
                 @Index(name = "idx_todo_item_period_date", columnList = "period_date"),
-                @Index(name = "idx_todo_item_order", columnList = "order_index")
+                @Index(name = "idx_todo_item_order", columnList = "order_index"),
+                @Index(name = "idx_todo_item_rule_code", columnList = "rule_code")
+        },
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uq_user_date_title",
+                        columnNames = {"user_id", "period_date", "title"}
+                )
         }
 )
 @Getter
@@ -31,12 +38,12 @@ public class TodoItem extends BaseTimeEntity {
     @Column(name = "todo_item_id")
     private Long id;
 
-    /** 소유자 (리스트 제거 → 아이템이 사용자에 직접 소속) */
+    /** 소유자 */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    /** 할 일 제목 (기존 content → title) */
+    /** 할 일 제목 */
     @Column(name = "title", length = 150, nullable = false)
     private String title;
 
@@ -44,7 +51,7 @@ public class TodoItem extends BaseTimeEntity {
     @Column(name = "summary", length = 1000)
     private String summary;
 
-    /** 하루 단위 기간(예: 해야 할 날짜 / 마감일) */
+    /** 하루 단위 기간 */
     @Column(name = "period_date")
     private LocalDate periodDate;
 
@@ -61,7 +68,26 @@ public class TodoItem extends BaseTimeEntity {
     @Column(name = "order_index")
     private Integer orderIndex;
 
-    /** 이 항목을 충족시킨 소비 로그 (FK는 소비 테이블에 존재) */
+    /** 소비 로그 연결 (FK는 소비 테이블) */
     @OneToOne(mappedBy = "satisfiedTodoItem", fetch = FetchType.LAZY)
     private ConsumptionLog consumptionLog;
+
+    /* ====== 머신 판정/자동체크 메타 ====== */
+
+    /** 어떤 규칙/AI에 의해 체크되었는지 식별자 */
+    @Column(name = "rule_code", length = 50)
+    private String ruleCode;
+
+    /** 규칙 실행 시 파라미터/근거(JSON 직렬화) */
+    @Column(name = "rule_params", columnDefinition = "json")
+    private String ruleParams;
+
+    /** 자동 체크 여부 (true면 사람이 아닌 머신 로직으로 체크됨) */
+    @Column(name = "auto_checked", nullable = false)
+    @Builder.Default
+    private Boolean autoChecked = false;
+
+    /** 자동 체크 발생 시각 */
+    @Column(name = "auto_checked_at")
+    private LocalDateTime autoCheckedAt;
 }

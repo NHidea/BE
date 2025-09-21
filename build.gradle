@@ -1,6 +1,6 @@
 plugins {
 	id 'java'
-	id 'org.springframework.boot' version '3.3.5'      // ⬅️ 3.5.x → 3.3.5로 조정
+	id 'org.springframework.boot' version '3.3.5'
 	id 'io.spring.dependency-management' version '1.1.7'
 }
 
@@ -21,8 +21,14 @@ dependencies {
 	// JPA
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 
-	// Bean Validation (hibernate-validator)
+	// ✅ Spring Security (SecurityConfig 컴파일용)
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+
+	// Bean Validation
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+	// Swagger / OpenAPI
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
 
 	// MySQL Driver
 	runtimeOnly 'com.mysql:mysql-connector-j'
@@ -31,15 +37,12 @@ dependencies {
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 
-	// DevTools
+	// DevTools (개발용)
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 
 	// Test
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-
-	// Swagger / OpenAPI (springdoc)
-	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
 }
 
 tasks.named('test') { useJUnitPlatform() }

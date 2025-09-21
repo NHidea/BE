@@ -25,7 +25,8 @@ public class AiSuggestService {
     /** 미리보기: DB 저장 없이 제안 3건 생성 */
     public SuggestPreviewResponse preview(Long userId, LocalDate date) {
         LocalDate d = (date != null) ? date : LocalDate.now();
-        // (임시 규칙) 이미 존재하는 오늘 아이템 타이틀 수집 → 중복 안나게 추천
+
+        // 이미 존재하는 오늘 아이템 타이틀 → 중복 제거
         Set<String> existingTitles = todoItemRepository
                 .findByUserIdAndPeriodDateOrderByOrderIndexAsc(userId, d)
                 .stream().map(TodoItem::getTitle).filter(Objects::nonNull)
@@ -44,8 +45,10 @@ public class AiSuggestService {
     /** 커밋: 선택된 제안(최대 3개)을 실제 TodoItem으로 저장 */
     @Transactional
     public List<TodoItem> commit(Long userId, LocalDate date, String requestId, List<AiTodoSuggestion> suggests) {
-        // 존재하는지 확인(사용자)
-        userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
+        // 사용자 확인
+        userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
+
         LocalDate d = (date != null) ? date : LocalDate.now();
 
         // orderIndex 기본값 보정
@@ -55,16 +58,18 @@ public class AiSuggestService {
 
         List<TodoItem> result = new ArrayList<>();
         int seq = 1;
+
         for (AiTodoSuggestion s : suggests.stream().limit(3).toList()) {
             String title = Objects.requireNonNullElse(s.getTitle(), "").trim();
             if (title.isEmpty()) continue; // title 필수
 
-            // 같은 날짜 같은 제목 있으면 스킵(멱등성 보장)
+            // 같은 날짜 같은 제목 있으면 스킵
             if (todoItemRepository.existsByUserIdAndPeriodDateAndTitle(userId, d, title)) {
                 continue;
             }
 
             Integer idx = (s.getOrderIndex() != null) ? s.getOrderIndex() : (base + seq);
+
             TodoItem item = TodoItem.builder()
                     .user(User.builder().id(userId).build())
                     .title(title)
@@ -72,17 +77,19 @@ public class AiSuggestService {
                     .periodDate(d)
                     .isChecked(false)
                     .orderIndex(idx)
+                    .ruleCode(Optional.ofNullable(s.getRuleCode()).orElse("SUGGEST_RULES_V1"))
+                    .ruleParams(Optional.ofNullable(s.getRuleParams()).orElse("{\"source\":\"mbti+spending\"}"))
+                    .autoChecked(false)
                     .build();
+
             result.add(todoItemRepository.save(item));
             seq++;
         }
         return result;
     }
 
-    /** 매우 단순한 규칙 기반 3건 생성 (MBTI/소비내역 반영용 훅 자리) */
+    /** 매우 단순한 규칙 기반 3건 생성 */
     private List<AiTodoSuggestion> ruleBasedThree(Long userId, LocalDate date, Set<String> existingTitles) {
-        // TODO: MBTI, 최근 소비내역 리드 → 프롬프트 빌드 → LLM 호출(or 룰) 후 정규화
-        // 지금은 예시로 MBTI 타입에 상관없이 “소비 습관 교정” 성격의 가벼운 3가지 추천
         List<String[]> pool = List.of(
                 new String[]{"점심 후 바로 가계부 기록", "오늘 결제 1건이라도 기록 남기기"},
                 new String[]{"카드명세 5분 점검", "어제 쓴 항목 중 불필요 지출 체크"},
@@ -91,9 +98,9 @@ public class AiSuggestService {
                 new String[]{"교통비 최적화 확인", "자주 가는 경로 대체 확인하기"}
         );
 
-        // 중복 피해서 3개 뽑기
         List<AiTodoSuggestion> out = new ArrayList<>();
         int order = 1;
+
         for (String[] cand : pool) {
             String title = cand[0];
             if (!existingTitles.contains(title)) {
@@ -103,11 +110,14 @@ public class AiSuggestService {
                         .title(title)
                         .summary(cand[1])
                         .orderIndex(order++)
+                        .ruleCode("SUGGEST_RULES_V1")
+                        .ruleParams("{\"seed\":\"default-pool\"}")
                         .build());
             }
             if (out.size() == 3) break;
         }
-        // 만약 3개 미만이면, 남는 건 임의 보충
+
+        // 보충
         while (out.size() < 3) {
             out.add(AiTodoSuggestion.builder()
                     .userId(userId)
@@ -115,6 +125,8 @@ public class AiSuggestService {
                     .title("지출 카테고리 분류 정리")
                     .summary("카테고리 미지정 3건 표시/정리")
                     .orderIndex(order++)
+                    .ruleCode("SUGGEST_FALLBACK")
+                    .ruleParams("{\"reason\":\"fallback-fill\"}")
                     .build());
         }
         return out;
