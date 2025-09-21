@@ -1,42 +1,54 @@
-HELP.md
-.gradle
+# --- Python / venv / build ---
+__pycache__/
+*.py[cod]
+*.so
+.venv/
+venv/
+env/
+*.egg-info/
 build/
-!gradle/wrapper/gradle-wrapper.jar
-!**/src/main/**/build/
-!**/src/test/**/build/
+dist/
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-bin/
-!**/src/main/**/bin/
-!**/src/test/**/bin/
-
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
-out/
-!**/src/main/**/out/
-!**/src/test/**/out/
-
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-
-### VS Code ###
-.vscode/
-
-# Spring Boot application properties
-src/main/resources/application.properties
+# --- Secrets / credentials ---
 .env
-Dockerfile
+.env.*
+*.pem
+*.key
+*.crt
+*.p12
+service_account*.json
+!/.env.example
+
+# --- Data / artifacts / models ---
+faiss.index
+*.pkl
+*.pt
+*.bin
+*.ckpt
+*.onnx
+*.tflite
+*.zip
+*.tar
+*.tar.gz
+*.parquet
+*.db
+*.sqlite*
+logs/
+*.log
+resp.json
+
+# --- Knowledge base & model weights (keep repo clean) ---
+kb/**
+models/**
+# keep placeholders
+!kb/.gitkeep
+!models/.gitkeep
+
+# --- Docker compose (keep out if it contains env) ---
+docker-compose*.yml
+compose*.yml
+
+# --- Jupyter / OS ---
+.ipynb_checkpoints/
+.DS_Store
+Thumbs.db
